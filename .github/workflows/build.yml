@@ -1,142 +1,216 @@
-name: Build and Test
+name: AutoKey Build and Release
 
 on:
   push:
     branches: [main, develop]
   pull_request:
     branches: [main]
+  release:
+    types: [published]
 
-env:
-  BUILD_TYPE: Release
-  QT_VERSION: 5.15.2
+permissions:
+  contents: write
+  packages: write
+  actions: read
 
 jobs:
-  build-windows:
+  build:
     runs-on: windows-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup MSVC
-        uses: microsoft/setup-msbuild@v1.3
-
       - name: Install Qt
         uses: jurplel/install-qt-action@v3
         with:
-          version: ${{ env.QT_VERSION }}
-          host: windows
-          target: desktop
-          arch: win64_msvc2019_64
+          version: "5.15.2"
+          arch: "win64_msvc2019_64"
+          target: "desktop"
           cache: true
-          cache-key-prefix: install-qt-action
-          setup-python: false
 
-      - name: Setup vcpkg (fallback)
-        if: env.VCPKG_ROOT == ''
-        run: |
-          git clone https://github.com/Microsoft/vcpkg.git C:\vcpkg
-          C:\vcpkg\bootstrap-vcpkg.bat
-          echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
-        shell: pwsh
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
 
       - name: Configure CMake
         run: |
-          $cmakeArgs = @(
-          "-B", "${{github.workspace}}/build",
-          "-DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}"
-        )
-
-        # Use Qt from jurplel/install-qt-action
-        if ($env:Qt5_DIR) {
-          $cmakeArgs += "-DCMAKE_PREFIX_PATH=${{env.Qt5_DIR}}"
-          Write-Host "Using Qt from install-qt-action: ${{env.Qt5_DIR}}"
-        }
-
-        # Add vcpkg toolchain if available
-        if ($env:VCPKG_ROOT) {
-          $toolchain = "$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
-          if (Test-Path $toolchain) {
-            $cmakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$toolchain"
-            Write-Host "Using vcpkg toolchain: $toolchain"
-          }
-        }
-
-        cmake @cmakeArgs
-      shell: pwsh
+          cmake -S . -B build -G "Visual Studio 16 2019" -A x64 `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_PREFIX_PATH="${{ env.Qt5_Dir }}"
 
       - name: Build
-        run: |
-          cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+        run: cmake --build build --config Release
 
-      - name: Test executable exists
+      - name: Package application
         run: |
-          if (Test-Path "${{github.workspace}}/build/bin/AutoKey.exe") {
-            Write-Host "✓ AutoKey.exe found"
-            $version = (Get-Item "${{github.workspace}}/build/bin/AutoKey.exe").VersionInfo
-            Write-Host "File version: $($version.FileVersion)"
-          } else {
-            Write-Error "✗ AutoKey.exe not found"
-            exit 1
+          # Create distribution directory
+          $distDir = "dist"
+          New-Item -ItemType Directory -Path $distDir -Force | Out-Null
+
+          # Copy main executable
+          Copy-Item "build\bin\Release\AutoKey.exe" $distDir
+
+          # Copy configuration
+          Copy-Item "config.json" $distDir
+
+          # Copy documentation
+          Copy-Item "README.md" $distDir
+          Copy-Item "CHANGELOG.md" $distDir
+
+          # Copy icons directory
+          Copy-Item "icons" $distDir -Recurse
+
+          # Run windeployqt to include Qt dependencies
+          $qtBinDir = "${{ env.Qt5_Dir }}\bin"
+          $windeployqt = "$qtBinDir\windeployqt.exe"
+
+          if (Test-Path $windeployqt) {
+            Write-Host "Running windeployqt..."
+            & $windeployqt --release --no-translations --no-system-d3d-compiler --no-opengl-sw --dir $distDir "$distDir\AutoKey.exe"
           }
-        shell: pwsh
 
-      - name: Upload build artifacts
+          # Create version info
+          $versionInfo = @"
+          AutoKey for Diablo 3
+          Version: 1.0.0
+          Build Date: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+          Build Type: Release
+
+          System Requirements:
+          - Windows 10/11
+          - Visual C++ Redistributable 2019/2022
+
+          Installation:
+          1. Extract all files to a folder
+          2. Run AutoKey.exe
+          3. Configure your profiles in the application
+
+          For support and updates, visit:
+          https://github.com/${{ github.repository }}
+          "@
+
+          $versionInfo | Out-File -FilePath "$distDir\VERSION.txt" -Encoding UTF8
+
+          # Create launch script
+          $launchScript = @"
+          @echo off
+          cd /d "%~dp0"
+          start AutoKey.exe
+          "@
+
+          $launchScript | Out-File -FilePath "$distDir\Launch AutoKey.bat" -Encoding ASCII
+
+          # List packaged files
+          Write-Host "Packaged files:"
+          Get-ChildItem $distDir -Recurse | ForEach-Object {
+            $size = if ($_.PSIsContainer) { "DIR" } else { "$([math]::Round($_.Length / 1KB, 1)) KB" }
+            Write-Host "  $($_.Name) ($size)"
+          }
+
+      - name: Create ZIP archive
+        run: |
+          $zipPath = "AutoKey-Windows.zip"
+          Compress-Archive -Path "dist\*" -DestinationPath $zipPath -CompressionLevel Optimal
+
+          $zipSize = [math]::Round((Get-Item $zipPath).Length / 1MB, 2)
+          Write-Host "Created ZIP archive: $zipPath ($zipSize MB)"
+
+      - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: autokey-windows-build
+          name: autokey-windows
           path: |
-            build/bin/AutoKey.exe
-            config.json
-            README.md
-          retention-days: 7
+            AutoKey-Windows.zip
+            dist/
+          retention-days: 30
 
-  build-analysis:
+  release:
+    needs: build
     runs-on: windows-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+
+    permissions:
+      contents: write
+      packages: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup MSVC
-        uses: microsoft/setup-msbuild@v1.3
-
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v3
-        with:
-          version: ${{ env.QT_VERSION }}
-          host: windows
-          target: desktop
-          arch: win64_msvc2019_64
-          cache: true
-        setup-python: false
-
-      - name: Run static analysis
+      - name: Generate release tag
+        id: tag
         run: |
-          # Basic code analysis
-          Write-Host "Running basic code analysis..."
-
-          # Check for common issues
-          $cppFiles = Get-ChildItem -Path . -Filter "*.cpp" -Recurse
-          $headerFiles = Get-ChildItem -Path . -Filter "*.h" -Recurse
-
-          Write-Host "Found $($cppFiles.Count) .cpp files and $($headerFiles.Count) .h files"
-
-          # Check for TODO/FIXME comments
-          $todos = Select-String -Path $cppFiles,$headerFiles -Pattern "TODO|FIXME|XXX" -CaseSensitive:$false
-          if ($todos) {
-            Write-Host "Found TODO/FIXME comments:"
-            $todos | ForEach-Object { Write-Host "  $($_.Filename):$($_.LineNumber): $($_.Line.Trim())" }
+          $BUILD_DATE = (Get-Date -Format "yyyy-MM-dd HH:mm:ss UTC")
+          if ("${{ github.ref }}" -eq "refs/heads/main") {
+            $tag = "v$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+            $prerelease = "false"
+            $name = "AutoKey Release $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+          } else {
+            $tag = "dev-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+            $prerelease = "true"
+            $name = "AutoKey Development Build $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
           }
 
-          # Check for potential memory leaks (basic check)
-          $newCalls = Select-String -Path $cppFiles -Pattern "\bnew\s+" -CaseSensitive:$false
-          $deleteCalls = Select-String -Path $cppFiles -Pattern "\bdelete\s+" -CaseSensitive:$false
+          echo "tag=$tag" >> $env:GITHUB_OUTPUT
+          echo "prerelease=$prerelease" >> $env:GITHUB_OUTPUT
+          echo "name=$name" >> $env:GITHUB_OUTPUT
+          echo "build_date=$BUILD_DATE" >> $env:GITHUB_OUTPUT
 
-          Write-Host "Found $($newCalls.Count) 'new' calls and $($deleteCalls.Count) 'delete' calls"
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: autokey-windows
+          path: ./artifacts
 
-          if ($newCalls.Count -gt $deleteCalls.Count) {
-            Write-Warning "Potential memory leak: more 'new' than 'delete' calls"
-          }
-        shell: pwsh
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.name }}
+          body: |
+            ## AutoKey for Diablo 3 Release
+
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** ${{ github.sha }}
+            **Build Date:** ${{ steps.tag.outputs.build_date }}
+
+            ### ✨ Features
+            - ✅ **Fixed F5/F6 Global Hotkeys** - Now working perfectly across all applications
+            - 🎮 Automated key pressing for Diablo 3
+            - 👥 5 pre-configured character class profiles
+            - ⚙️ Customizable key sequences and intervals
+            - 🔥 Global hotkeys (F5 to start, F6 to stop)
+            - 📱 System tray integration with custom icon
+            - 💾 JSON configuration storage
+            - 🎯 Action editor with keyboard capture
+
+            ### 📥 Download
+            - **Windows**: AutoKey-Windows.zip (Complete package with all dependencies)
+
+            ### 🚀 Installation
+            1. Download AutoKey-Windows.zip
+            2. Extract to a folder of your choice
+            3. Run AutoKey.exe or use "Launch AutoKey.bat"
+            4. Configure your profiles and start gaming!
+
+            ### 🎮 Usage
+            - **F5**: Start auto-key simulation
+            - **F6**: Stop auto-key simulation
+            - Configure profiles in the main window
+            - Minimize to system tray for background operation
+
+            ### 📋 System Requirements
+            - Windows 10/11
+            - Visual C++ Redistributable 2019/2022 (usually pre-installed)
+
+            ### 📝 Notes
+            - This tool is designed for legitimate gameplay enhancement
+            - Ensure compliance with game terms of service
+            - Global hotkeys work across all applications
+
+            ---
+            *This release was automatically generated from commit ${{ github.sha }}*
+          draft: false
+          prerelease: ${{ steps.tag.outputs.prerelease }}
+          files: |
+            ./artifacts/AutoKey-Windows.zip
