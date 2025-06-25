@@ -1,0 +1,142 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  BUILD_TYPE: Release
+  QT_VERSION: 5.15.2
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: microsoft/setup-msbuild@v1.3
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: windows
+          target: desktop
+          arch: win64_msvc2019_64
+          cache: true
+          cache-key-prefix: install-qt-action
+          setup-python: false
+
+      - name: Setup vcpkg (fallback)
+        if: env.VCPKG_ROOT == ''
+        run: |
+          git clone https://github.com/Microsoft/vcpkg.git C:\vcpkg
+          C:\vcpkg\bootstrap-vcpkg.bat
+          echo "VCPKG_ROOT=C:\vcpkg" >> $env:GITHUB_ENV
+        shell: pwsh
+
+      - name: Configure CMake
+        run: |
+          $cmakeArgs = @(
+          "-B", "${{github.workspace}}/build",
+          "-DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}"
+        )
+
+        # Use Qt from jurplel/install-qt-action
+        if ($env:Qt5_DIR) {
+          $cmakeArgs += "-DCMAKE_PREFIX_PATH=${{env.Qt5_DIR}}"
+          Write-Host "Using Qt from install-qt-action: ${{env.Qt5_DIR}}"
+        }
+
+        # Add vcpkg toolchain if available
+        if ($env:VCPKG_ROOT) {
+          $toolchain = "$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+          if (Test-Path $toolchain) {
+            $cmakeArgs += "-DCMAKE_TOOLCHAIN_FILE=$toolchain"
+            Write-Host "Using vcpkg toolchain: $toolchain"
+          }
+        }
+
+        cmake @cmakeArgs
+      shell: pwsh
+
+      - name: Build
+        run: |
+          cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+      - name: Test executable exists
+        run: |
+          if (Test-Path "${{github.workspace}}/build/bin/AutoKey.exe") {
+            Write-Host "✓ AutoKey.exe found"
+            $version = (Get-Item "${{github.workspace}}/build/bin/AutoKey.exe").VersionInfo
+            Write-Host "File version: $($version.FileVersion)"
+          } else {
+            Write-Error "✗ AutoKey.exe not found"
+            exit 1
+          }
+        shell: pwsh
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: autokey-windows-build
+          path: |
+            build/bin/AutoKey.exe
+            config.json
+            README.md
+          retention-days: 7
+
+  build-analysis:
+    runs-on: windows-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: microsoft/setup-msbuild@v1.3
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: windows
+          target: desktop
+          arch: win64_msvc2019_64
+          cache: true
+        setup-python: false
+
+      - name: Run static analysis
+        run: |
+          # Basic code analysis
+          Write-Host "Running basic code analysis..."
+
+          # Check for common issues
+          $cppFiles = Get-ChildItem -Path . -Filter "*.cpp" -Recurse
+          $headerFiles = Get-ChildItem -Path . -Filter "*.h" -Recurse
+
+          Write-Host "Found $($cppFiles.Count) .cpp files and $($headerFiles.Count) .h files"
+
+          # Check for TODO/FIXME comments
+          $todos = Select-String -Path $cppFiles,$headerFiles -Pattern "TODO|FIXME|XXX" -CaseSensitive:$false
+          if ($todos) {
+            Write-Host "Found TODO/FIXME comments:"
+            $todos | ForEach-Object { Write-Host "  $($_.Filename):$($_.LineNumber): $($_.Line.Trim())" }
+          }
+
+          # Check for potential memory leaks (basic check)
+          $newCalls = Select-String -Path $cppFiles -Pattern "\bnew\s+" -CaseSensitive:$false
+          $deleteCalls = Select-String -Path $cppFiles -Pattern "\bdelete\s+" -CaseSensitive:$false
+
+          Write-Host "Found $($newCalls.Count) 'new' calls and $($deleteCalls.Count) 'delete' calls"
+
+          if ($newCalls.Count -gt $deleteCalls.Count) {
+            Write-Warning "Potential memory leak: more 'new' than 'delete' calls"
+          }
+        shell: pwsh

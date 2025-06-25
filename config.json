@@ -1,0 +1,161 @@
+{
+    "version": "1.0.0",
+    "appName": "AutoKey for Diablo 3",
+    "startHotkey": "F5",
+    "stopHotkey": "F6",
+    "currentProfileIndex": 0,
+    "minimizeToTray": true,
+    "startMinimized": false,
+    "profiles": [
+        {
+            "name": "Barbarian - Basic",
+            "enabled": true,
+            "actions": [
+                {
+                    "type": 0,
+                    "key": 50,
+                    "interval": 2000,
+                    "enabled": true
+                },
+                {
+                    "type": 0,
+                    "key": 51,
+                    "interval": 3000,
+                    "enabled": true
+                },
+                {
+                    "type": 0,
+                    "key": 52,
+                    "interval": 4000,
+                    "enabled": true
+                }
+            ]
+        },
+        {
+            "name": "Wizard - Combo",
+            "enabled": true,
+            "actions": [
+                {
+                    "type": 0,
+                    "key": 49,
+                    "interval": 1500,
+                    "enabled": true
+                },
+                {
+                    "type": 0,
+                    "key": 50,
+                    "interval": 2000,
+                    "enabled": true
+                },
+                {
+                    "type": 0,
+                    "key": 51,
+                    "interval": 2500,
+                    "enabled": true
+                },
+                {
+                    "type": 0,
+                    "key": 52,
+                    "interval": 3000,
+                    "enabled": true
+                },
+                {
+                    "type": 2,
+                    "key": 0,
+                    "interval": 1000,
+                    "enabled": true
+                }
+            ]
+        },
+        {
+            "name": "Demon Hunter - Rapid",
+            "enabled": true,
+            "actions": [
+                {
+                    "type": 1,
+                    "key": 0,
+                    "interval": 500,
+                    "enabled": true
+                },
+                {
+                    "type": 0,
+                    "key": 50,
+                    "interval": 1800,
+                    "enabled": true
+                },
+                {
+                    "type": 0,
+                    "key": 51,
+                    "interval": 2200,
+                    "enabled": true
+                },
+                {
+                    "type": 2,
+                    "key": 0,
+                    "interval": 800,
+                    "enabled": true
+                }
+            ]
+        },
+        {
+            "name": "Monk - Balanced",
+            "enabled": true,
+            "actions": [
+                {
+                    "type": 0,
+                    "key": 49,
+                    "interval": 1200,
+                    "enabled": true
+                },
+                {
+                    "type": 0,
+                    "key": 50,
+                    "interval": 1800,
+                    "enabled": true
+                },
+                {
+                    "type": 0,
+                    "key": 51,
+                    "interval": 2400,
+                    "enabled": true
+                },
+                {
+                    "type": 0,
+                    "key": 52,
+                    "interval": 3600,
+                    "enabled": true
+                }
+            ]
+        },
+        {
+            "name": "Necromancer - Pet Build",
+            "enabled": true,
+            "actions": [
+                {
+                    "type": 0,
+                    "key": 49,
+                    "interval": 5000,
+                    "enabled": true
+                },
+                {
+                    "type": 0,
+                    "key": 50,
+                    "interval": 3000,
+                    "enabled": true
+                },
+                {
+                    "type": 0,
+                    "key": 51,
+                    "interval": 8000,
+                    "enabled": true
+                },
+                {
+                    "type": 2,
+                    "key": 0,
+                    "interval": 1500,
+                    "enabled": true
+                }
+            ]
+        }
+    ]
+}

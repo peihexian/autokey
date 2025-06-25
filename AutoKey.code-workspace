@@ -1,0 +1,174 @@
+{
+    "folders": [
+        {
+            "name": "AutoKey",
+            "path": "."
+        }
+    ],
+    "settings": {
+        "cmake.configureOnOpen": true,
+        "cmake.buildDirectory": "${workspaceFolder}/build",
+        "cmake.generator": "Visual Studio 17 2022",
+        "cmake.preferredGenerators": [
+            "Visual Studio 17 2022",
+            "Visual Studio 16 2019",
+            "Ninja",
+            "MinGW Makefiles"
+        ],
+        "cmake.configureArgs": [
+            "-DCMAKE_BUILD_TYPE=Release",
+            "-DCMAKE_TOOLCHAIN_FILE=${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+            "-DCMAKE_PREFIX_PATH=${env:VCPKG_ROOT}/installed/x64-windows"
+        ],
+        "cmake.buildArgs": [
+            "--config",
+            "Release"
+        ],
+        "files.associations": {
+            "*.h": "cpp",
+            "*.cpp": "cpp",
+            "*.ui": "xml",
+            "*.qrc": "xml",
+            "*.pro": "makefile",
+            "*.pri": "makefile"
+        },
+        "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+        "C_Cpp.default.intelliSenseMode": "windows-msvc-x64",
+        "C_Cpp.default.cStandard": "c17",
+        "C_Cpp.default.cppStandard": "c++17",
+        "editor.formatOnSave": true,
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4,
+        "editor.detectIndentation": false,
+        "files.encoding": "utf8",
+        "files.eol": "\r\n",
+        "terminal.integrated.defaultProfile.windows": "PowerShell",
+        "search.exclude": {
+            "**/build": true,
+            "**/build-*": true,
+            "**/.git": true,
+            "**/node_modules": true,
+            "**/CMakeFiles": true,
+            "**/CMakeCache.txt": true
+        },
+        "files.exclude": {
+            "**/build": true,
+            "**/build-*": true,
+            "**/.git": false,
+            "**/CMakeFiles": true,
+            "**/CMakeCache.txt": true
+        }
+    },
+    "extensions": {
+        "recommendations": [
+            "ms-vscode.cpptools",
+            "ms-vscode.cpptools-extension-pack",
+            "ms-vscode.cmake-tools",
+            "twxs.cmake",
+            "ms-vscode.powershell",
+            "github.vscode-github-actions",
+            "ms-vscode.vscode-json",
+            "redhat.vscode-yaml"
+        ]
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "Build AutoKey",
+                "type": "shell",
+                "command": "${workspaceFolder}/scripts/build.ps1",
+                "args": [
+                    "-BuildType",
+                    "Release"
+                ],
+                "group": {
+                    "kind": "build",
+                    "isDefault": true
+                },
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                },
+                "problemMatcher": [
+                    "$msCompile",
+                    "$gcc"
+                ]
+            },
+            {
+                "label": "Package AutoKey",
+                "type": "shell",
+                "command": "${workspaceFolder}/scripts/package.ps1",
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                },
+                "dependsOn": "Build AutoKey"
+            },
+            {
+                "label": "Clean Build",
+                "type": "shell",
+                "command": "${workspaceFolder}/scripts/build.ps1",
+                "args": [
+                    "-Clean"
+                ],
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                }
+            },
+            {
+                "label": "Setup Development Environment",
+                "type": "shell",
+                "command": "${workspaceFolder}/scripts/setup-dev.ps1",
+                "args": [
+                    "-CheckOnly"
+                ],
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "shared"
+                }
+            }
+        ]
+    },
+    "launch": {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "Debug AutoKey",
+                "type": "cppvsdbg",
+                "request": "launch",
+                "program": "${workspaceFolder}/build/bin/AutoKey.exe",
+                "args": [],
+                "stopAtEntry": false,
+                "cwd": "${workspaceFolder}/build/bin",
+                "environment": [],
+                "console": "externalTerminal",
+                "preLaunchTask": "Build AutoKey"
+            },
+            {
+                "name": "Release AutoKey",
+                "type": "cppvsdbg",
+                "request": "launch",
+                "program": "${workspaceFolder}/build/bin/AutoKey.exe",
+                "args": [],
+                "stopAtEntry": false,
+                "cwd": "${workspaceFolder}/build/bin",
+                "environment": [],
+                "console": "externalTerminal",
+                "preLaunchTask": "Build AutoKey"
+            }
+        ]
+    }
+}

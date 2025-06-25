@@ -1,0 +1,72 @@
+{
+    "cmake.configureOnOpen": true,
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.generator": "Visual Studio 17 2022",
+    "cmake.preferredGenerators": [
+        "Visual Studio 17 2022",
+        "Visual Studio 16 2019",
+        "Ninja",
+        "MinGW Makefiles"
+    ],
+    "cmake.configureArgs": [
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DCMAKE_TOOLCHAIN_FILE=${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "-DCMAKE_PREFIX_PATH=${env:VCPKG_ROOT}/installed/x64-windows"
+    ],
+    "cmake.buildArgs": [
+        "--config",
+        "Release"
+    ],
+    "files.associations": {
+        "*.h": "cpp",
+        "*.cpp": "cpp",
+        "*.ui": "xml",
+        "*.qrc": "xml",
+        "*.pro": "makefile",
+        "*.pri": "makefile"
+    },
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.default.intelliSenseMode": "windows-msvc-x64",
+    "C_Cpp.default.compilerPath": "",
+    "C_Cpp.default.cStandard": "c17",
+    "C_Cpp.default.cppStandard": "c++17",
+    "editor.formatOnSave": true,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
+    "editor.detectIndentation": false,
+    "files.encoding": "utf8",
+    "files.eol": "\r\n",
+    "git.ignoreLimitWarning": true,
+    "cmake.showSystemKits": true,
+    "cmake.automaticReconfigure": true,
+    "cmake.clearOutputBeforeBuild": true,
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "qt.searchPaths": [
+        "${env:VCPKG_ROOT}/installed/x64-windows",
+        "${env:VCPKG_ROOT}/installed/x86-windows",
+        "C:/Qt",
+        "C:/Qt5",
+        "D:/Qt",
+        "D:/Qt5"
+    ],
+    "qt.qmakePath": "",
+    "qt.cmakePath": "",
+    "cmake.environment": {
+        "VCPKG_ROOT": "${env:VCPKG_ROOT}"
+    },
+    "search.exclude": {
+        "**/build": true,
+        "**/build-*": true,
+        "**/.git": true,
+        "**/node_modules": true,
+        "**/CMakeFiles": true,
+        "**/CMakeCache.txt": true
+    },
+    "files.exclude": {
+        "**/build": true,
+        "**/build-*": true,
+        "**/.git": false,
+        "**/CMakeFiles": true,
+        "**/CMakeCache.txt": true
+    }
+}

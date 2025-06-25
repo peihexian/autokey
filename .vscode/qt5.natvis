@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <!-- QString -->
+  <Type Name="QString">
+    <DisplayString>{d->data(),su}</DisplayString>
+    <StringView>d->data(),su</StringView>
+    <Expand>
+      <Item Name="[size]">d->size</Item>
+      <Item Name="[capacity]">d->alloc</Item>
+      <ArrayItems>
+        <Size>d->size</Size>
+        <ValuePointer>d->data()</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- QByteArray -->
+  <Type Name="QByteArray">
+    <DisplayString>{d->data(),s}</DisplayString>
+    <StringView>d->data(),s</StringView>
+    <Expand>
+      <Item Name="[size]">d->size</Item>
+      <Item Name="[capacity]">d->alloc</Item>
+      <ArrayItems>
+        <Size>d->size</Size>
+        <ValuePointer>d->data()</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- QList -->
+  <Type Name="QList&lt;*&gt;">
+    <DisplayString>{{size = {d->end - d->begin}}}</DisplayString>
+    <Expand>
+      <Item Name="[size]">d->end - d->begin</Item>
+      <ArrayItems>
+        <Size>d->end - d->begin</Size>
+        <ValuePointer>d->begin</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- QVector -->
+  <Type Name="QVector&lt;*&gt;">
+    <DisplayString>{{size = {d->size}}}</DisplayString>
+    <Expand>
+      <Item Name="[size]">d->size</Item>
+      <Item Name="[capacity]">d->alloc</Item>
+      <ArrayItems>
+        <Size>d->size</Size>
+        <ValuePointer>d->data()</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- QHash -->
+  <Type Name="QHash&lt;*,*&gt;">
+    <DisplayString>{{size = {d->size}}}</DisplayString>
+    <Expand>
+      <Item Name="[size]">d->size</Item>
+    </Expand>
+  </Type>
+
+  <!-- QMap -->
+  <Type Name="QMap&lt;*,*&gt;">
+    <DisplayString>{{size = {d->size}}}</DisplayString>
+    <Expand>
+      <Item Name="[size]">d->size</Item>
+    </Expand>
+  </Type>
+
+  <!-- QVariant -->
+  <Type Name="QVariant">
+    <DisplayString>{d.type.typeId}</DisplayString>
+    <Expand>
+      <Item Name="[type]">d.type.typeId</Item>
+      <Item Name="[value]">d.data</Item>
+    </Expand>
+  </Type>
+</AutoVisualizer>
