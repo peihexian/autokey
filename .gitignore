@@ -105,7 +105,6 @@ logs/
 ._*
 .Spotlight-V100
 .Trashes
-Icon?
 
 # Qt Creator
 CMakeLists.txt.user*
