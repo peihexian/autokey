@@ -130,7 +130,7 @@ jobs:
         }
 
         cmake @cmakeArgs
-      shell: pwsh
+        shell: pwsh
 
       - name: Build
         run: |
