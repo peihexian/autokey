@@ -1,79 +1,78 @@
 {
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Debug AutoKey",
-      "type": "cppvsdbg",
-      "request": "launch",
-      "program": "${workspaceFolder}/build/bin/Debug/AutoKey.exe",
-      "args": [],
-      "stopAtEntry": false,
-      "cwd": "${workspaceFolder}/build/bin/Debug",
-      "environment": [],
-      "console": "internalConsole",
-      "preLaunchTask": "CMake: Build Debug",
-      "internalConsoleOptions": "openOnSessionStart",
-      "logging": {
-        "moduleLoad": true,
-        "trace": true,
-        "engineLogging": true,
-        "programOutput": true,
-        "exceptions": true
-      },
-      "visualizerFile": "c:\\Users\\phx\\AppData\\Roaming\\Cursor\\User\\workspaceStorage\\3c9b90059538a82d7ef3b49786c7cbed\\tonka3000.qtvsctools\\qt.natvis.xml",
-      "exceptionBreakpoints": {
-        "cpp_throw": true,
-        "cpp_catch": false
-      }
-    },
-    {
-      "name": "Debug AutoKey (GDB)",
-      "type": "cppdbg",
-      "request": "launch",
-      "program": "${workspaceFolder}/build/bin/Release/AutoKey.exe",
-      "args": [],
-      "stopAtEntry": false,
-      "cwd": "${workspaceFolder}/build/bin/Release",
-      "environment": [],
-      "externalConsole": false,
-      "MIMode": "gdb",
-      "miDebuggerPath": "gdb.exe",
-      "preLaunchTask": "CMake: Build",
-      "setupCommands": [
+    "version": "0.2.0",
+    "configurations": [
         {
-          "description": "Enable pretty-printing for gdb",
-          "text": "-enable-pretty-printing",
-          "ignoreFailures": true
+            "name": "Debug AutoKey",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/bin/Debug/AutoKey.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/bin/Debug",
+            "environment": [],
+            "console": "internalConsole",
+            "preLaunchTask": "CMake: Build Debug",
+            "internalConsoleOptions": "openOnSessionStart",
+            "logging": {
+                "moduleLoad": true,
+                "trace": true,
+                "engineLogging": true,
+                "programOutput": true,
+                "exceptions": true
+            },
+            "visualizerFile": "${workspaceFolder}/.vscode/qt5.natvis",
+            "exceptionBreakpoints": {
+                "cpp_throw": true,
+                "cpp_catch": false
+            }
+        },
+        {
+            "name": "Debug AutoKey (GDB)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/bin/Release/AutoKey.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/bin/Release",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "gdb.exe",
+            "preLaunchTask": "CMake: Build",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "Release AutoKey",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/bin/Release/AutoKey.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/bin/Release",
+            "environment": [],
+            "console": "internalConsole",
+            "preLaunchTask": "CMake: Build",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "name": "AutoKey with Arguments",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/bin/Release/AutoKey.exe",
+            "args": [
+                "--minimized"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/bin/Release",
+            "environment": [],
+            "console": "internalConsole",
+            "preLaunchTask": "CMake: Build"
         }
-      ],
-      "visualizerFile": "c:\\Users\\phx\\AppData\\Roaming\\Cursor\\User\\workspaceStorage\\3c9b90059538a82d7ef3b49786c7cbed\\tonka3000.qtvsctools\\qt.natvis.xml"
-    },
-    {
-      "name": "Release AutoKey",
-      "type": "cppvsdbg",
-      "request": "launch",
-      "program": "${workspaceFolder}/build/bin/Release/AutoKey.exe",
-      "args": [],
-      "stopAtEntry": false,
-      "cwd": "${workspaceFolder}/build/bin/Release",
-      "environment": [],
-      "console": "internalConsole",
-      "preLaunchTask": "CMake: Build",
-      "internalConsoleOptions": "neverOpen",
-      "visualizerFile": "c:\\Users\\phx\\AppData\\Roaming\\Cursor\\User\\workspaceStorage\\3c9b90059538a82d7ef3b49786c7cbed\\tonka3000.qtvsctools\\qt.natvis.xml"
-    },
-    {
-      "name": "AutoKey with Arguments",
-      "type": "cppvsdbg",
-      "request": "launch",
-      "program": "${workspaceFolder}/build/bin/Release/AutoKey.exe",
-      "args": ["--minimized"],
-      "stopAtEntry": false,
-      "cwd": "${workspaceFolder}/build/bin/Release",
-      "environment": [],
-      "console": "internalConsole",
-      "preLaunchTask": "CMake: Build",
-      "visualizerFile": "c:\\Users\\phx\\AppData\\Roaming\\Cursor\\User\\workspaceStorage\\3c9b90059538a82d7ef3b49786c7cbed\\tonka3000.qtvsctools\\qt.natvis.xml"
-    }
-  ]
+    ]
 }

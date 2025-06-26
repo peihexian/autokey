@@ -8,6 +8,9 @@ QJsonObject KeyAction::toJson() const {
     obj["key"] = key;
     obj["interval"] = interval;
     obj["enabled"] = enabled;
+    obj["weight"] = weight;
+    obj["minInterval"] = minInterval;
+    obj["maxInterval"] = maxInterval;
     return obj;
 }
 
@@ -16,6 +19,9 @@ void KeyAction::fromJson(const QJsonObject &json) {
     key = json["key"].toInt();
     interval = json["interval"].toInt();
     enabled = json["enabled"].toBool();
+    weight = json["weight"].toInt(50);  // Default to 50 if not present
+    minInterval = json["minInterval"].toInt(50);  // Default to 50ms
+    maxInterval = json["maxInterval"].toInt(1000);  // Default to 1000ms
 }
 
 // ClassProfile implementation

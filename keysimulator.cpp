@@ -2,9 +2,14 @@
 #include <QDebug>
 #include <QApplication>
 #include <QWidget>
+#include <QtCore>
+#include <climits>
 
-KeySimulator::KeySimulator(QObject *parent) 
+KeySimulator::KeySimulator(QObject *parent)
     : QObject(parent), m_isRunning(false) {
+    // Initialize timer for smart simulation
+    m_timer = new QTimer(this);
+    connect(m_timer, &QTimer::timeout, this, &KeySimulator::executeAction);
 }
 
 KeySimulator::~KeySimulator() {
@@ -16,24 +21,32 @@ void KeySimulator::startSimulation(const ClassProfile &profile) {
     if (m_isRunning) {
         stopSimulation();
     }
-    
+
     m_currentProfile = profile;
     m_isRunning = true;
-    
-    setupActionTimers();
-    
-    qDebug() << "Simulation started for profile:" << profile.getName();
+
+    // Clear previous key states
+    m_keyStates.clear();
+
+    // Start timer with 50ms interval for smart simulation
+    m_timer->start(50);
+
+    qDebug() << "Smart key simulation started with profile:" << profile.getName();
     emit simulationStarted();
 }
+
+
 
 void KeySimulator::stopSimulation() {
     if (!m_isRunning) {
         return;
     }
-    
+
+    // Clear key states and stop timer
+    m_keyStates.clear();
+    m_timer->stop();
     m_isRunning = false;
-    clearActionTimers();
-    
+
     qDebug() << "Simulation stopped";
     emit simulationStopped();
 }
@@ -104,64 +117,7 @@ void KeySimulator::unregisterGlobalHotkeys() {
     }
 }
 
-void KeySimulator::setupActionTimers() {
-    clearActionTimers();
-    
-    const auto &actions = m_currentProfile.getActions();
-    for (int i = 0; i < actions.size(); ++i) {
-        const auto &action = actions[i];
-        if (!action.enabled) {
-            continue;
-        }
-        
-        ActionTimer actionTimer;
-        actionTimer.timer = new QTimer(this);
-        actionTimer.action = action;
-        actionTimer.actionIndex = i;
-        
-        connect(actionTimer.timer, &QTimer::timeout, this, &KeySimulator::executeAction);
-        
-        actionTimer.timer->start(action.interval);
-        m_actionTimers.append(actionTimer);
-    }
-}
 
-void KeySimulator::clearActionTimers() {
-    for (auto &actionTimer : m_actionTimers) {
-        actionTimer.timer->stop();
-        actionTimer.timer->deleteLater();
-    }
-    m_actionTimers.clear();
-}
-
-void KeySimulator::executeAction() {
-    QTimer *senderTimer = qobject_cast<QTimer*>(sender());
-    if (!senderTimer || !m_isRunning) {
-        return;
-    }
-    
-    // Find the corresponding action
-    for (const auto &actionTimer : m_actionTimers) {
-        if (actionTimer.timer == senderTimer) {
-            executeKeyAction(actionTimer.action);
-            break;
-        }
-    }
-}
-
-void KeySimulator::executeKeyAction(const KeyAction &action) {
-    switch (action.type) {
-        case InputType::Keyboard:
-            simulateKeyPress(action.key);
-            break;
-        case InputType::MouseLeft:
-            simulateMouseClick(true);
-            break;
-        case InputType::MouseRight:
-            simulateMouseClick(false);
-            break;
-    }
-}
 
 void KeySimulator::simulateKeyPress(int virtualKey) {
     INPUT inputs[2] = {};
@@ -205,3 +161,147 @@ INPUT KeySimulator::createMouseInput(DWORD mouseData, bool leftButton, bool butt
     
     return input;
 }
+
+
+
+void KeySimulator::executeAction() {
+    if (!m_isRunning) {
+        return;
+    }
+
+    qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
+    QVector<int> weightedPool;
+
+    // Create weighted pool - higher weight = more entries
+    for (const auto& action : m_currentProfile.getActions()) {
+        if (action.enabled && action.type == InputType::Keyboard) {
+            // Check if enough time has passed since last press
+            bool canPress = true;
+            if (m_keyStates.contains(action.key)) {
+                const auto& state = m_keyStates[action.key];
+                qint64 timeSinceLastPress = currentTime - state.lastPressed;
+                canPress = (timeSinceLastPress >= action.minInterval);
+            }
+
+            if (canPress) {
+                // Use squared weight to make differences more dramatic
+                // Weight 95 -> 95*95 = 9025 entries
+                // Weight 40 -> 40*40 = 1600 entries
+                // Weight 20 -> 20*20 = 400 entries
+                int entries = action.weight * action.weight / 100;  // Scale down to reasonable numbers
+                entries = qMax(1, entries);  // At least 1 entry
+
+                for (int i = 0; i < entries; ++i) {
+                    weightedPool.append(action.key);
+                }
+            }
+        }
+    }
+
+    int selectedKey = 0;
+    if (!weightedPool.isEmpty()) {
+        // Randomly select from weighted pool
+        int index = QRandomGenerator::global()->bounded(weightedPool.size());
+        selectedKey = weightedPool[index];
+    } else {
+        // If no keys available, find the highest weight key
+        int highestWeight = 0;
+        for (const auto& action : m_currentProfile.getActions()) {
+            if (action.enabled && action.type == InputType::Keyboard && action.weight > highestWeight) {
+                highestWeight = action.weight;
+                selectedKey = action.key;
+            }
+        }
+    }
+
+    if (selectedKey > 0) {
+        simulateKeyPress(selectedKey);
+
+        // Update the pressed key's state
+        if (!m_keyStates.contains(selectedKey)) {
+            m_keyStates[selectedKey] = SmartKeyState();
+        }
+
+        auto& state = m_keyStates[selectedKey];
+        state.lastPressed = currentTime;
+        state.isActive = true;
+    }
+}
+
+
+
+
+
+QString KeySimulator::generateSequencePreview(const ClassProfile &profile, int length) {
+    if (profile.getActions().isEmpty()) {
+        return "No actions configured";
+    }
+
+    QString sequence;
+    QMap<int, int> lastUsed;  // Track when each key was last used
+
+    // Initialize last used times
+    for (const auto& action : profile.getActions()) {
+        if (action.enabled && action.type == InputType::Keyboard) {
+            lastUsed[action.key] = -1000;  // Initialize to allow immediate use
+        }
+    }
+
+    for (int i = 0; i < length; ++i) {
+        QVector<int> weightedPool;
+
+        // Create weighted pool based on availability and weight
+        for (const auto& action : profile.getActions()) {
+            if (action.enabled && action.type == InputType::Keyboard) {
+                // Check if enough time has passed since last use
+                int timeSinceLastUse = i - lastUsed[action.key];
+                int minGap = action.minInterval / 50;  // Convert to steps (50ms base interval)
+
+                if (timeSinceLastUse >= minGap) {
+                    // Use squared weight to make differences more dramatic
+                    int entries = action.weight * action.weight / 100;  // Scale down
+                    entries = qMax(1, entries);  // At least 1 entry
+
+                    for (int j = 0; j < entries; ++j) {
+                        weightedPool.append(action.key);
+                    }
+                }
+            }
+        }
+
+        int selectedKey = 0;
+        if (!weightedPool.isEmpty()) {
+            // Randomly select from weighted pool
+            int index = QRandomGenerator::global()->bounded(weightedPool.size());
+            selectedKey = weightedPool[index];
+        } else {
+            // If no keys available, use highest weight key
+            int highestWeight = 0;
+            for (const auto& action : profile.getActions()) {
+                if (action.enabled && action.type == InputType::Keyboard && action.weight > highestWeight) {
+                    highestWeight = action.weight;
+                    selectedKey = action.key;
+                }
+            }
+        }
+
+        if (selectedKey > 0) {
+            // Update last used time
+            lastUsed[selectedKey] = i;
+
+            // Convert virtual key to character for display
+            char keyChar = '?';
+            if (selectedKey >= 49 && selectedKey <= 57) {  // 1-9 keys
+                keyChar = '0' + (selectedKey - 48);
+            } else if (selectedKey >= 65 && selectedKey <= 90) {  // A-Z keys
+                keyChar = 'A' + (selectedKey - 65);
+            }
+
+            sequence += keyChar;
+        }
+    }
+
+    return sequence;
+}
+
+

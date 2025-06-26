@@ -8,26 +8,44 @@
     "startMinimized": false,
     "profiles": [
         {
-            "name": "Barbarian - Basic",
+            "name": "Test Smart Profile",
             "enabled": true,
             "actions": [
                 {
                     "type": 0,
+                    "key": 49,
+                    "interval": 200,
+                    "enabled": true,
+                    "weight": 20,
+                    "minInterval": 200,
+                    "maxInterval": 400
+                },
+                {
+                    "type": 0,
                     "key": 50,
-                    "interval": 2000,
-                    "enabled": true
+                    "interval": 100,
+                    "enabled": true,
+                    "weight": 40,
+                    "minInterval": 100,
+                    "maxInterval": 200
                 },
                 {
                     "type": 0,
                     "key": 51,
-                    "interval": 3000,
-                    "enabled": true
+                    "interval": 100,
+                    "enabled": true,
+                    "weight": 40,
+                    "minInterval": 100,
+                    "maxInterval": 200
                 },
                 {
                     "type": 0,
                     "key": 52,
-                    "interval": 4000,
-                    "enabled": true
+                    "interval": 100,
+                    "enabled": true,
+                    "weight": 95,
+                    "minInterval": 100,
+                    "maxInterval": 200
                 }
             ]
         },

@@ -63,6 +63,7 @@ private slots:
     void onStopSimulation();
     void onSimulationStarted();
     void onSimulationStopped();
+    void onTestSmartSimulation();
     
     // System tray
     void onTrayIconActivated(QSystemTrayIcon::ActivationReason reason);

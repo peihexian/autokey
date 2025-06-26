@@ -13,6 +13,7 @@
 #include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QHeaderView>
+#include <QMessageBox>
 #include <QCheckBox>
 #include <QSpinBox>
 #include <QTextEdit>
@@ -137,12 +138,19 @@ void MainWindow::createProfileTab() {
     
     m_startButton = new QPushButton("Start (F5)");
     m_stopButton = new QPushButton("Stop (F6)");
+    QPushButton *testSmartButton = new QPushButton("Test Smart Keys");
+
     m_startButton->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; }");
     m_stopButton->setStyleSheet("QPushButton { background-color: #f44336; color: white; font-weight: bold; }");
-    
+    testSmartButton->setStyleSheet("QPushButton { background-color: #2196F3; color: white; font-weight: bold; }");
+
     controlLayout->addWidget(m_startButton);
     controlLayout->addWidget(m_stopButton);
+    controlLayout->addWidget(testSmartButton);
     controlLayout->addStretch();
+
+    // Connect test button
+    connect(testSmartButton, &QPushButton::clicked, this, &MainWindow::onTestSmartSimulation);
     
     layout->addWidget(controlGroup);
     
@@ -156,8 +164,8 @@ void MainWindow::createActionsTab() {
     
     // Actions table
     m_actionsTable = new QTableWidget();
-    m_actionsTable->setColumnCount(4);
-    QStringList headers = {"Type", "Key/Button", "Interval (ms)", "Enabled"};
+    m_actionsTable->setColumnCount(6);
+    QStringList headers = {"Type", "Key/Button", "Interval (ms)", "Weight", "Min/Max Interval", "Enabled"};
     m_actionsTable->setHorizontalHeaderLabels(headers);
     m_actionsTable->horizontalHeader()->setStretchLastSection(true);
     m_actionsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -374,6 +382,8 @@ void MainWindow::setupConnections() {
     connect(m_editActionButton, &QPushButton::clicked, this, &MainWindow::onEditAction);
     connect(m_actionsTable, &QTableWidget::itemSelectionChanged,
             this, &MainWindow::onActionSelectionChanged);
+    connect(m_actionsTable, &QTableWidget::itemChanged,
+            this, &MainWindow::onActionTableItemChanged);
 
     // Simulation control
     connect(m_startButton, &QPushButton::clicked, this, &MainWindow::onStartSimulation);
@@ -541,7 +551,19 @@ void MainWindow::onActionTableItemChanged(QTableWidgetItem *item) {
             QMessageBox::warning(this, "Invalid Interval",
                 "Interval must be between 100 and 60000 milliseconds.");
         }
-    } else if (column == 3) { // Enabled column
+    } else if (column == 3) { // Weight column
+        bool ok;
+        int newWeight = item->text().toInt(&ok);
+        if (ok && newWeight >= 1 && newWeight <= 100) {
+            action.weight = newWeight;
+            changed = true;
+        } else {
+            // Revert to original value if invalid
+            item->setText(QString::number(action.weight));
+            QMessageBox::warning(this, "Invalid Weight",
+                "Weight must be between 1 and 100.");
+        }
+    } else if (column == 5) { // Enabled column (moved to column 5)
         action.enabled = (item->checkState() == Qt::Checked);
         changed = true;
     }
@@ -561,6 +583,7 @@ void MainWindow::onStartSimulation() {
         if (currentProfileIndex < profiles.size()) {
             const ClassProfile &profile = profiles[currentProfileIndex];
             if (profile.isEnabled() && !profile.getActions().isEmpty()) {
+                // Always use smart simulation
                 m_keySimulator->startSimulation(profile);
             } else {
                 QMessageBox::warning(this, "Cannot Start",
@@ -578,10 +601,12 @@ void MainWindow::onSimulationStarted() {
     m_isSimulationRunning = true;
     m_startButton->setEnabled(false);
     m_stopButton->setEnabled(true);
-    m_statusLabel->setText("Simulation running...");
+
+    // Update status
+    m_statusLabel->setText("Smart simulation running...");
 
     if (m_trayIcon) {
-        m_trayIcon->showMessage("AutoKey", "Simulation started",
+        m_trayIcon->showMessage("AutoKey", "Smart simulation started",
                                QSystemTrayIcon::Information, 2000);
     }
 }
@@ -754,11 +779,23 @@ void MainWindow::updateActionList() {
                 intervalItem->setFlags(intervalItem->flags() | Qt::ItemIsEditable);
                 m_actionsTable->setItem(i, 2, intervalItem);
 
+                // Weight column - make it editable
+                QTableWidgetItem *weightItem = new QTableWidgetItem(QString::number(action.weight));
+                weightItem->setFlags(weightItem->flags() | Qt::ItemIsEditable);
+                m_actionsTable->setItem(i, 3, weightItem);
+
+                // Min/Max Interval column
+                QString intervalRange = QString("%1-%2ms").arg(action.minInterval).arg(action.maxInterval);
+                QTableWidgetItem *rangeItem = new QTableWidgetItem(intervalRange);
+                rangeItem->setFlags(rangeItem->flags() & ~Qt::ItemIsEditable); // Read-only
+                rangeItem->setToolTip("Edit in action dialog for detailed settings");
+                m_actionsTable->setItem(i, 4, rangeItem);
+
                 // Enabled column
                 QTableWidgetItem *enabledItem = new QTableWidgetItem();
                 enabledItem->setCheckState(action.enabled ? Qt::Checked : Qt::Unchecked);
                 enabledItem->setFlags(enabledItem->flags() | Qt::ItemIsUserCheckable);
-                m_actionsTable->setItem(i, 3, enabledItem);
+                m_actionsTable->setItem(i, 5, enabledItem);
             }
         }
     }
@@ -893,3 +930,44 @@ bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, long *r
 
     return QMainWindow::nativeEvent(eventType, message, result);
 }
+
+void MainWindow::onTestSmartSimulation() {
+    // Create a test profile with smart key actions
+    ClassProfile testProfile("Smart Test Profile");
+
+    // Add test actions with different weights
+    KeyAction action1(InputType::Keyboard, 52, 1000, true, 80, 50, 300);   // 4 key - high weight
+    KeyAction action2(InputType::Keyboard, 49, 1000, true, 15, 2000, 5000); // 1 key - low weight
+    KeyAction action3(InputType::Keyboard, 50, 1000, true, 10, 3000, 8000); // 2 key - lowest weight
+    KeyAction action4(InputType::Keyboard, 51, 1000, true, 20, 1500, 4000); // 3 key - medium weight
+
+    testProfile.addAction(action1);
+    testProfile.addAction(action2);
+    testProfile.addAction(action3);
+    testProfile.addAction(action4);
+
+    // Generate and show preview
+    QString preview = m_keySimulator->generateSequencePreview(testProfile, 50);
+
+    // Show preview in a message box
+    QMessageBox msgBox;
+    msgBox.setWindowTitle("Smart Key Test");
+    msgBox.setText("Smart Key Sequence Preview:");
+    msgBox.setDetailedText(QString("Generated sequence (50 keys):\n%1\n\nProfile:\n- 4 key: weight 80, interval 50-300ms\n- 1 key: weight 15, interval 2000-5000ms\n- 2 key: weight 10, interval 3000-8000ms\n- 3 key: weight 20, interval 1500-4000ms").arg(preview));
+    msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Apply);
+    msgBox.button(QMessageBox::Apply)->setText("Start Smart Simulation");
+
+    int result = msgBox.exec();
+
+    if (result == QMessageBox::Apply) {
+        // Start smart simulation with test profile
+        if (m_isSimulationRunning) {
+            m_keySimulator->stopSimulation();
+        }
+
+        m_keySimulator->startSimulation(testProfile);
+        m_statusLabel->setText("Smart simulation running with test profile...");
+    }
+}
+
+

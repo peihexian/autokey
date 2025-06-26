@@ -12,6 +12,10 @@ ActionEditDialog::ActionEditDialog(const KeyAction &action, QWidget *parent)
     m_typeComboBox->setCurrentIndex(static_cast<int>(m_action.type));
     m_intervalSpinBox->setValue(m_action.interval);
     m_enabledCheckBox->setChecked(m_action.enabled);
+    m_weightSlider->setValue(m_action.weight);
+    m_weightLabel->setText(QString::number(m_action.weight));
+    m_minIntervalSpinBox->setValue(m_action.minInterval);
+    m_maxIntervalSpinBox->setValue(m_action.maxInterval);
     updateKeyDisplay();
     
     setWindowTitle("Edit Action");
@@ -56,8 +60,41 @@ void ActionEditDialog::setupUI() {
     // Enabled checkbox
     m_enabledCheckBox = new QCheckBox("Enabled");
     formLayout->addRow("", m_enabledCheckBox);
-    
+
     mainLayout->addWidget(settingsGroup);
+
+    // Smart simulation group
+    QGroupBox *smartGroup = new QGroupBox("Smart Simulation Settings");
+    QFormLayout *smartLayout = new QFormLayout(smartGroup);
+
+    // Weight slider
+    QHBoxLayout *weightLayout = new QHBoxLayout();
+    m_weightSlider = new QSlider(Qt::Horizontal);
+    m_weightSlider->setRange(1, 100);
+    m_weightSlider->setValue(50);
+    m_weightLabel = new QLabel("50");
+    m_weightLabel->setMinimumWidth(30);
+    weightLayout->addWidget(m_weightSlider);
+    weightLayout->addWidget(m_weightLabel);
+    smartLayout->addRow("Weight (1-100):", weightLayout);
+
+    // Min interval
+    m_minIntervalSpinBox = new QSpinBox();
+    m_minIntervalSpinBox->setRange(50, 10000);
+    m_minIntervalSpinBox->setSuffix(" ms");
+    m_minIntervalSpinBox->setSingleStep(50);
+    m_minIntervalSpinBox->setValue(50);
+    smartLayout->addRow("Min Interval:", m_minIntervalSpinBox);
+
+    // Max interval
+    m_maxIntervalSpinBox = new QSpinBox();
+    m_maxIntervalSpinBox->setRange(100, 60000);
+    m_maxIntervalSpinBox->setSuffix(" ms");
+    m_maxIntervalSpinBox->setSingleStep(100);
+    m_maxIntervalSpinBox->setValue(1000);
+    smartLayout->addRow("Max Interval:", m_maxIntervalSpinBox);
+
+    mainLayout->addWidget(smartGroup);
     
     // Buttons
     QHBoxLayout *buttonLayout = new QHBoxLayout();
@@ -74,6 +111,7 @@ void ActionEditDialog::setupUI() {
     connect(m_typeComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &ActionEditDialog::onTypeChanged);
     connect(m_keyButton, &QPushButton::clicked, this, &ActionEditDialog::onKeyButtonClicked);
+    connect(m_weightSlider, &QSlider::valueChanged, this, &ActionEditDialog::onWeightChanged);
     connect(m_okButton, &QPushButton::clicked, this, &ActionEditDialog::accept);
     connect(m_cancelButton, &QPushButton::clicked, this, &ActionEditDialog::reject);
 }
@@ -219,15 +257,28 @@ int ActionEditDialog::qtKeyToVirtualKey(int qtKey) {
     }
 }
 
+void ActionEditDialog::onWeightChanged(int value) {
+    m_weightLabel->setText(QString::number(value));
+    m_action.weight = value;
+}
+
 void ActionEditDialog::accept() {
     // Update action with current values
     m_action.type = static_cast<InputType>(m_typeComboBox->itemData(m_typeComboBox->currentIndex()).toInt());
     m_action.interval = m_intervalSpinBox->value();
     m_action.enabled = m_enabledCheckBox->isChecked();
+    m_action.weight = m_weightSlider->value();
+    m_action.minInterval = m_minIntervalSpinBox->value();
+    m_action.maxInterval = m_maxIntervalSpinBox->value();
 
     // Validate
     if (m_action.type == InputType::Keyboard && m_action.key == 0) {
         QMessageBox::warning(this, "Invalid Action", "Please set a key for keyboard actions.");
+        return;
+    }
+
+    if (m_action.minInterval >= m_action.maxInterval) {
+        QMessageBox::warning(this, "Invalid Intervals", "Minimum interval must be less than maximum interval.");
         return;
     }
 

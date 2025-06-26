@@ -12,6 +12,7 @@
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QLabel>
+#include <QSlider>
 #include "classprofile.h"
 
 class ActionEditDialog : public QDialog {
@@ -31,6 +32,7 @@ protected:
 private slots:
     void onTypeChanged(int index);
     void onKeyButtonClicked();
+    void onWeightChanged(int value);
 
 private:
     void setupUI();
@@ -45,7 +47,13 @@ private:
     QPushButton *m_keyButton;
     QSpinBox *m_intervalSpinBox;
     QCheckBox *m_enabledCheckBox;
-    
+
+    // Smart simulation controls
+    QSlider *m_weightSlider;
+    QLabel *m_weightLabel;
+    QSpinBox *m_minIntervalSpinBox;
+    QSpinBox *m_maxIntervalSpinBox;
+
     QPushButton *m_okButton;
     QPushButton *m_cancelButton;
 };

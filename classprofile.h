@@ -17,11 +17,15 @@ struct KeyAction {
     int key;           // Virtual key code for keyboard, 0 for mouse
     int interval;      // Interval in milliseconds
     bool enabled;      // Whether this action is enabled
-    
-    KeyAction() : type(InputType::Keyboard), key(0), interval(1000), enabled(true) {}
-    KeyAction(InputType t, int k, int i, bool e = true) 
-        : type(t), key(k), interval(i), enabled(e) {}
-    
+    int weight;        // Weight for smart simulation (1-100)
+    int minInterval;   // Minimum interval for smart simulation
+    int maxInterval;   // Maximum interval for smart simulation
+
+    KeyAction() : type(InputType::Keyboard), key(0), interval(1000), enabled(true),
+                  weight(50), minInterval(50), maxInterval(1000) {}
+    KeyAction(InputType t, int k, int i, bool e = true, int w = 50, int minInt = 50, int maxInt = 1000)
+        : type(t), key(k), interval(i), enabled(e), weight(w), minInterval(minInt), maxInterval(maxInt) {}
+
     QJsonObject toJson() const;
     void fromJson(const QJsonObject &json);
 };

@@ -1,6 +1,5 @@
 # Build directories
 build/
-build-*/
 dist/
 release/
 debug/
@@ -30,7 +29,6 @@ ui_*.h
 *.qmlc
 *.jsc
 Makefile*
-*build-*
 *.autosave
 
 # Visual Studio

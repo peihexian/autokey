@@ -1,16 +1,17 @@
 # AutoKey for Diablo 3
 
-An automated key-pressing application designed specifically for Diablo 3 gameplay. This Qt5 C++ application allows you to configure and automate key sequences for different character classes, reducing repetitive strain during long gaming sessions.
+An intelligent key-pressing application designed specifically for Diablo 3 gameplay. This Qt5 C++ application uses advanced weight-based algorithms to generate natural, intelligent key sequences that mimic human gameplay patterns.
 
-## Features
+## 🎮 Key Features
 
-- **Multiple Character Profiles**: 5 pre-configured class profiles with customizable settings
-- **Flexible Key/Mouse Configuration**: Support for keyboard keys (1-4) and mouse buttons (left/right click)
-- **Configurable Intervals**: Set individual timing intervals for each action to match ability cooldowns
+- **Smart Weight Algorithm**: Uses squared weight calculations to generate intelligent key sequences where high-weight keys dominate output
+- **Weight Configuration**: Each key can be assigned a weight from 1-100, determining its frequency in the output sequence
+- **Interval Control**: Set minimum/maximum intervals for each key to prevent over-pressing
+- **Natural Sequences**: Generates patterns like `444444444422334444444444441223344444444` where main skills (high weight) dominate with occasional utility skills
 - **Global Hotkeys**: F5 to start, F6 to stop simulation (works even when game is in focus)
 - **System Tray Integration**: Minimize to tray and control from system tray menu
-- **JSON Configuration**: Save and load custom configurations
-- **User-Friendly GUI**: Easy-to-use tabbed interface for configuration
+- **JSON Configuration**: Save and load custom weight configurations
+- **Real-time Editing**: Modify weights and intervals directly in the action table
 
 ## Pre-configured Profiles
 
